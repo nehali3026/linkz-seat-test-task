@@ -1,0 +1,74 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+enum SeatStatus {
+  AVAILABLE
+  HELD
+  RESERVED
+}
+
+enum PaymentStatus {
+  PENDING
+  COMPLETED
+  FAILED
+}
+
+model User {
+  id           String        @id @default(cuid())
+  email        String        @unique
+  passwordHash String
+  name         String
+  createdAt    DateTime      @default(now())
+  holds        SeatHold[]
+  reservations Reservation[]
+}
+
+model Seat {
+  id          Int           @id @default(autoincrement())
+  label       String        @unique
+  status      SeatStatus    @default(AVAILABLE)
+  updatedAt   DateTime      @updatedAt
+  hold        SeatHold?
+  reservation Reservation?
+}
+
+model SeatHold {
+  id        String   @id @default(cuid())
+  seatId    Int      @unique
+  userId    String
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+  seat      Seat     @relation(fields: [seatId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  payment   Payment?
+}
+
+model Payment {
+  id             String        @id @default(cuid())
+  holdId         String        @unique
+  amountCents    Int
+  status         PaymentStatus @default(PENDING)
+  idempotencyKey String        @unique
+  failureReason  String?
+  createdAt      DateTime      @default(now())
+  completedAt    DateTime?
+  hold           SeatHold      @relation(fields: [holdId], references: [id], onDelete: Cascade)
+  reservation    Reservation?
+}
+
+model Reservation {
+  id        String   @id @default(cuid())
+  seatId    Int      @unique
+  userId    String
+  paymentId String   @unique
+  createdAt DateTime @default(now())
+  seat      Seat     @relation(fields: [seatId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  payment   Payment  @relation(fields: [paymentId], references: [id], onDelete: Cascade)
+}
