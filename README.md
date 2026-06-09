@@ -1,0 +1,1 @@
+# linkz-seat-test-task
